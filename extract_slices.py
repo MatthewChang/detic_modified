@@ -1,4 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+from pathlib import Path
+import pathlib
+from os.path import dirname
 import argparse
 import glob
 import multiprocessing as mp
@@ -139,10 +142,13 @@ if __name__ == "__main__":
 
     demo = VisualizationDemo(cfg, args)
 
+
     if args.input:
         if len(args.input) == 1:
             args.input = glob.glob(os.path.expanduser(args.input[0]))
             assert args.input, "The input path(s) was not found"
+        data_outs = {}
+        video = None
         for path in tqdm.tqdm(args.input, disable=not args.output):
             img = read_image(path, format="BGR")
             start_time = time.time()
@@ -156,19 +162,53 @@ if __name__ == "__main__":
                     time.time() - start_time,
                 )
             )
-            if args.output:
-                if os.path.isdir(args.output):
-                    assert os.path.isdir(args.output), args.output
-                    out_filename = os.path.join(args.output, os.path.basename(path))
-                else:
-                    assert len(args.input) == 1, "Please specify a directory with args.output"
-                    out_filename = args.output
-                visualized_output.save(out_filename)
-            else:
-                cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
-                cv2.imshow(WINDOW_NAME, visualized_output.get_image()[:, :, ::-1])
-                if cv2.waitKey(0) == 27:
-                    break  # esc to quit
+            pa = os.path.splitext(path)[0]
+            video,imgnum = Path(pa).parts[-2:]
+            im_id = '-'.join((video,imgnum))
+            predictions['instances'].get_fields().keys()
+            boxes = predictions['instances'].get_fields()['pred_boxes'].tensor
+            predictions['instances'].get_fields()['pred_boxes'].tensor
+            scores = predictions['instances'].get_fields()['scores']
+            classes = predictions['instances'].get_fields()['pred_classes']
+            masks = predictions['instances'].get_fields()['pred_masks']
+            bp_class = demo.metadata.thing_classes.index('backpack')
+            mask = classes == bp_class
+
+            res = {}
+            res['boxes'] = boxes
+            res['scores'] = scores
+            res['classes'] = classes
+            res['masks'] = masks
+            res = {k: v[mask] for k,v in res.items()}
+            data_outs[im_id] = res
+
+            for det_id in range(len(res['boxes'])):
+                box = res['boxes'][det_id].int()
+                crop = img[box[1]:box[3],box[0]:box[2]]
+                crop_id = im_id +f"-{det_id}"
+                from util.pyutil import write_images
+                out_file = f'outputs/{video}/{crop_id}.png'
+                pathlib.Path(dirname(out_file)).mkdir(parents=True, exist_ok=True)
+                crop = crop[...,::-1]
+                write_images(out_file,crop)
+        import torch
+        import pdb; pdb.set_trace()
+        assert video is not None
+        torch.save(f'outputs/{video}',data_outs)
+
+            # if args.output:
+                # if os.path.isdir(args.output):
+                    # assert os.path.isdir(args.output), args.output
+                    # out_filename = os.path.join(args.output, os.path.basename(path))
+                # else:
+                    # assert len(args.input) == 1, "Please specify a directory with args.output"
+                    # out_filename = args.output
+                # visualized_output.save(out_filename)
+            # else:
+                # cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+                # cv2.imshow(WINDOW_NAME, visualized_output.get_image()[:, :, ::-1])
+                # if cv2.waitKey(0) == 27:
+                    # break  # esc to quit
     elif args.webcam:
         assert args.input is None, "Cannot have both --input and --webcam!"
         assert args.output is None, "output not yet supported with --webcam!"
