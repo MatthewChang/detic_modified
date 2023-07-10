@@ -41,4 +41,7 @@ foo
 foo
 foo
 
-
+mv ~/projects/Detic/vis/cup/2023-07-05-16-29-54/a_red_cup/2023-07-05-16-29-54-0000000182-0.png a_white_coffee_cup
+mv ~/projects/Detic/vis/cup/2023-07-05-16-29-54/a_red_cup/2023-07-05-16-29-54-0000000560-0.png a_white_coffee_cup
+mv ~/projects/Detic/vis/cup/2023-07-05-16-29-54/a_red_cup/2023-07-05-16-29-54-0000000571-0.png a_white_coffee_cup
+mv ~/projects/Detic/vis/cup/2023-07-05-16-29-54/a_red_cup/2023-07-05-16-29-54-0000000572-0.png a_white_coffee_cup

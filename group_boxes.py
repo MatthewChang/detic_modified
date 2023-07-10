@@ -1,4 +1,5 @@
 import clip
+import pathlib
 import torch
 from glob import glob
 from PIL import Image
@@ -39,7 +40,8 @@ for cluster,files in grouped:
         shutil.copy(im,f"vis/cup/2023-07-05-16-29-54/cluster_{cluster}_{i}.png")
 
 
-target = model.encode_text(clip.tokenize(["a light blue cup"]).cuda())
+classes = ["a light blue cup",'a red cup','a black cup','a white cup','a white coffee cup']
+target = model.encode_text(clip.tokenize(classes).cuda())
 # compute the distance between each image and the target
 distances = []
 for im in tqdm(im_files):
@@ -47,6 +49,15 @@ for im in tqdm(im_files):
         img = preprocess(Image.open(im)).unsqueeze(0).to(device)
         feats = model.encode_image(img)
         distances.append(torch.cosine_similarity(target,feats).cpu().numpy())
+
+shutil.rmtree("vis/cup/2023-07-05-16-29-54")
+for dists,ims in tqdm(zip(distances,im_files)):
+    # copy the image to the vis folder corresponding to the most similar target
+    name = classes[np.argmax(dists)]
+    name = name.replace(" ","_")
+    folder = f"vis/cup/2023-07-05-16-29-54/{name}"
+    pathlib.Path(folder).mkdir(parents=True, exist_ok=True)
+    shutil.copy(ims,folder)
 
 # find the top 10 images
 dists = np.array(distances)[:,0]
