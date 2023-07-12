@@ -12,9 +12,10 @@ from imageio import imread
 from PIL import Image
 
 class ImagePairs(Dataset):
-    def __init__(self,data_file,preprocess=lambda x:x):
+    def __init__(self,data_file,preprocess=lambda x:x,masked=False):
         self.dat = np.load(data_file)
         self.preprocess = preprocess
+        self.masked = masked
 
     def __len__(self):
         return len(self.dat)
@@ -23,9 +24,14 @@ class ImagePairs(Dataset):
         im1_path,im2_path,label =  self.dat[idx]
         im1 = Image.open(im1_path)
         im2 = Image.open(im2_path)
+        if self.masked:
+            im1_mask = Image.open(im1_path.replace('outputs','output_masks'))
+            im2_mask = Image.open(im2_path.replace('outputs','output_masks'))
+            masked1 = np.array(im1) * (np.array(im1_mask)/255).astype(bool)
+            masked2 = np.array(im2) * (np.array(im2_mask)/255).astype(bool)
+            im1 = Image.fromarray(masked1)
+            im2 = Image.fromarray(masked2)
         im1,im2 = [self.preprocess(x) for x in (im1,im2)]
-        # im1 = imread(im1_path)
-        # im2 = imread(im2_path)
         return im1,im2,label == "True"
 
 

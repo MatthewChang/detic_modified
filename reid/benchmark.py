@@ -127,7 +127,7 @@ else:
 
 # trans = _transform(model.model.visual.input_resolution)
 # trans(i1[0])
-dataset = ImagePairs("reid/data/fremont.npy",preprocess=model.preprocess,mask=args.mask)
+dataset = ImagePairs("reid/data/fremont.npy",preprocess=model.preprocess,masked=args.mask)
 dataloader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=0)
 res = []
 labels = []
