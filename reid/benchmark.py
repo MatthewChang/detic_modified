@@ -6,18 +6,25 @@ import argparse
 from torch.utils.data import DataLoader
 from PIL import Image
 from tqdm import tqdm
+from torchvision.transforms import InterpolationMode
+BICUBIC = InterpolationMode.BICUBIC
 
 from util.pyutil import write_images
+from util.argparse_autoname import build_name
 from superglue.matching import Matching
 from superglue.utils import (AverageTimer, VideoStreamer, make_matching_plot_fast, frame2tensor)
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize, Lambda
+from reid.utils import ResizeLargest, PadToSize
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--method',choices=['clip','superglue'],default='clip')
 parser.add_argument('--mask',action='store_true')
-parser.add_argument('--pre-process',choices=['default','paste_center'],default='default')
+parser.add_argument('--vis',action='store_true')
+parser.add_argument('--pre-process',choices=['default','paste_center','aspect_resize'],default='default')
+# TODO: Impelemtnt aspect resize
 # parser.add_argument('--seed',default=0,type=int)
 args = parser.parse_args()
+name = build_name(args,parser)
 
 # places an image in the center of a black image of size x size
 def paste_center(size,im):
@@ -27,19 +34,27 @@ def paste_center(size,im):
     out[(size-h)//2:(size-h)//2+h,(size-w)//2:(size-w)//2+w] = im
     return out
 
+transform_aspect = Compose([ ResizeLargest(224), PadToSize(224,equal_padding=True) ])
+
 class ClipEval():
     def __init__(self):
         self.model, self.rescale = clip.load("ViT-B/32")
         self.device = 'cuda'
+        self.normalize = Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
         if args.pre_process == 'paste_center':
-            def process(im):
-                centered = paste_center(224,np.array(im))
-                return self.rescale(Image.fromarray(centered))
-            self.preprocess = process
+            self.preprocess = Compose([PadToSize(224,equal_padding=True),ToTensor()])
+        elif args.pre_process == 'aspect_resize':
+            self.preprocess = Compose([ResizeLargest(224),PadToSize(224,equal_padding=True),ToTensor()])
         else:
-            self.preprocess = self.rescale
+            self.preprocess = Compose([
+                Resize(224, interpolation=BICUBIC),
+                CenterCrop(224),
+                ToTensor(),
+            ])
+            # self.preprocess = self.rescale
     def __call__(self,i1,i2):
         with torch.no_grad():
+            i1,i2 = [self.normalize(x) for x in [i1,i2]]
             pi1,pi2 = [x.unsqueeze(0).to(self.device) for x in [i1,i2]]
             feats = [self.model.encode_image(x) for x in [pi1,pi2]]
             return torch.cosine_similarity(*feats).cpu().numpy()
@@ -62,7 +77,9 @@ class SuperpointEval():
         self.matching = Matching(config).eval().to(self.device)
         # grayscale image
         if args.pre_process == 'paste_center':
-            self.preprocess = Compose([Lambda(lambda x: paste_center(224,np.array(x))),ToTensor(),Lambda(lambda x: x[-1:])])
+            self.preprocess = Compose([PadToSize(224,equal_padding=True),ToTensor(),Lambda(lambda x: x[-1:])])
+        elif args.pre_process == 'aspect_resize':
+            self.preprocess = Compose([transform_aspect,ToTensor(),Lambda(lambda x: x[-1:])])
         else:
             self.preprocess = Compose([ToTensor(),Lambda(lambda x: x[-1:])])
 
@@ -129,6 +146,13 @@ else:
 # trans(i1[0])
 dataset = ImagePairs("reid/data/fremont.npy",preprocess=model.preprocess,masked=args.mask)
 dataloader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=0)
+
+if args.vis:
+    from pipe import take, select
+    ims = list(tqdm(dataloader) | take(25) | select(lambda x: torch.stack(x[:2])))
+    ims = torch.stack(ims).squeeze()
+    write_images('vis/ims.png',ims)
+
 res = []
 labels = []
 for batch in tqdm(dataloader):
@@ -148,7 +172,7 @@ print('baseline %.03f' % (labels.sum()/len(labels)))
 display = PrecisionRecallDisplay.from_predictions(labels, res)
 display.plot()
 import matplotlib.pyplot as plt
-plt.savefig(f'vis/pr_{args.method}.png')
+plt.savefig(f'vis/pr_{name}.png')
 
 # plt.clf()
 # randoms = np.random.rand(*res.shape)
@@ -156,3 +180,5 @@ plt.savefig(f'vis/pr_{args.method}.png')
 # display.plot()
 # import matplotlib.pyplot as plt
 # plt.savefig(f'vis/pr_random.png')
+
+# center, mask 0.607

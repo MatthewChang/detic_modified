@@ -38,3 +38,33 @@ python extract_slices.py --config-file configs/Detic_LCOCOI21k_CLIP_SwinB_896b32
 
 
 mv *.png ./grey
+
+python reid/benchmark.py --method clip --pre-process aspect_resize --mask
+0.526
+python reid/benchmark.py --method clip --pre-process aspect_resize
+0.448
+python reid/benchmark.py --method clip --pre-process paste_center --mask
+0.607
+python reid/benchmark.py --method clip --pre-process paste_center
+0.486
+python reid/benchmark.py --method clip --mask
+0.550
+python reid/benchmark.py --method clip 
+0.442
+
+python reid/benchmark.py --method superglue --pre-process aspect_resize --mask
+0.494
+python reid/benchmark.py --method superglue --pre-process aspect_resize
+0.499
+python reid/benchmark.py --method superglue --pre-process paste_center --mask
+0.231
+python reid/benchmark.py --method superglue --pre-process paste_center
+0.201
+python reid/benchmark.py --method superglue --mask
+0.180
+python reid/benchmark.py --method superglue 
+0.195
+
+baseline 0.146
+
+python reid/benchmark.py --method clip --pre-process paste_center --mask --vis
