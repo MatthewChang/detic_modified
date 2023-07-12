@@ -36,12 +36,5 @@ python extract_slices.py --config-file configs/Detic_LCOCOI21k_CLIP_SwinB_896b32
 python extract_slices.py --config-file configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml --input ./vis/frames/2023-07-05-16-23-13/*.jpg --vocabulary lvis --obj-class cup --opts MODEL.WEIGHTS models/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth
 python extract_slices.py --config-file configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml --input ./vis/frames/2023-07-05-16-29-54/*.jpg --vocabulary lvis --obj-class cup --opts MODEL.WEIGHTS models/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth
 
-foo
-foo
-foo
-foo
 
-mv ~/projects/Detic/vis/cup/2023-07-05-16-29-54/a_red_cup/2023-07-05-16-29-54-0000000182-0.png a_white_coffee_cup
-mv ~/projects/Detic/vis/cup/2023-07-05-16-29-54/a_red_cup/2023-07-05-16-29-54-0000000560-0.png a_white_coffee_cup
-mv ~/projects/Detic/vis/cup/2023-07-05-16-29-54/a_red_cup/2023-07-05-16-29-54-0000000571-0.png a_white_coffee_cup
-mv ~/projects/Detic/vis/cup/2023-07-05-16-29-54/a_red_cup/2023-07-05-16-29-54-0000000572-0.png a_white_coffee_cup
+mv *.png ./grey
