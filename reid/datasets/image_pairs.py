@@ -9,18 +9,23 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from imageio import imread
+from PIL import Image
 
 class ImagePairs(Dataset):
-    def __init__(self,data_file):
+    def __init__(self,data_file,preprocess=lambda x:x):
         self.dat = np.load(data_file)
+        self.preprocess = preprocess
 
     def __len__(self):
         return len(self.dat)
 
     def __getitem__(self, idx):
         im1_path,im2_path,label =  self.dat[idx]
-        im1 = imread(im1_path)
-        im2 = imread(im2_path)
+        im1 = Image.open(im1_path)
+        im2 = Image.open(im2_path)
+        im1,im2 = [self.preprocess(x) for x in (im1,im2)]
+        # im1 = imread(im1_path)
+        # im2 = imread(im2_path)
         return im1,im2,label == "True"
 
 
